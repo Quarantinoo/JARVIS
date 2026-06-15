@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#070a10">
+<title>JARVIS v32</title>
+<style>
+/* ════════ JARVIS v32 — clean build · red/blue only ════════ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#070a10; --panel:#0d1320; --line:#1b2638;
+  --red:#ff2b55; --blue:#19b9ff; --amber:#ffc400;
+  --txt:#d7e6ee; --dim:#5b7280; --faint:#33455a;
+}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+  font-size:14px;line-height:1.5;overscroll-behavior:none;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);}
+#app{max-width:430px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px;min-height:100%;}
+
+/* header */
+#hdr{display:flex;justify-content:space-between;align-items:baseline;}
+#hdr h1{font-size:20px;letter-spacing:5px;color:var(--red);font-weight:800;}
+#hdr small{font-size:10px;color:var(--faint);letter-spacing:1px;}
+#mkt{display:flex;gap:12px;font-size:11px;color:var(--dim);}
+#mkt b{color:var(--txt);font-weight:600;}
+#mkt .open{color:var(--red);font-weight:700;}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;}
+.card h2{font-size:10px;letter-spacing:2px;color:var(--dim);font-weight:700;margin-bottom:10px;}
+
+/* buttons */
+button{font-family:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);
+  background:#101827;color:var(--txt);font-size:13px;padding:11px 14px;}
+button:active{transform:scale(.98);}
+.btn-big{width:100%;padding:16px;font-size:15px;font-weight:700;letter-spacing:1px;}
+.btn-blue{background:rgba(25,185,255,.10);border-color:rgba(25,185,255,.45);color:var(--blue);}
+.btn-red{background:rgba(255,43,85,.10);border-color:rgba(255,43,85,.5);color:var(--red);}
+.btn-red.hot{animation:hot 1.3s infinite;}
+@keyframes hot{0%,100%{box-shadow:0 0 8px rgba(255,43,85,.2)}50%{box-shadow:0 0 26px rgba(255,43,85,.6)}}
+.btn-ghost{background:transparent;color:var(--dim);border-color:var(--line);font-size:11px;padding:8px 12px;}
+
+/* status line */
+#status{font-size:11px;color:var(--dim);text-align:center;min-height:17px;}
+
+/* trade card */
+#tcard{display:none;}
+#tcard.show{display:block;}
+#tc-head{font-size:17px;font-weight:800;letter-spacing:.5px;}
+#tc-conf{font-size:12px;margin:2px 0 10px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
+.cell{background:#0a0f1a;border:1px solid var(--line);border-radius:9px;padding:8px 10px;}
+.cell small{display:block;font-size:9px;color:var(--faint);letter-spacing:1px;}
+.cell b{font-size:14px;font-weight:700;}
+#tc-note{font-size:10px;color:var(--dim);margin:9px 0 11px;line-height:1.6;}
+#tc-acts{display:flex;gap:8px;}
+#tc-acts button{flex:1;font-weight:700;}
+
+/* stat rows */
+.row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid #111a29;}
+.row:last-child{border-bottom:none;}
+.row span{color:var(--dim);}
+.row b{font-weight:600;}
+
+/* toggle */
+.tgl{display:flex;justify-content:space-between;align-items:center;}
+.tgl button{min-width:64px;font-weight:700;font-size:12px;}
+.tgl button.on{background:rgba(25,185,255,.12);border-color:rgba(25,185,255,.5);color:var(--blue);}
+
+/* inputs */
+input{width:100%;background:#0a0f1a;border:1px solid var(--line);border-radius:8px;color:var(--txt);
+  font-size:13px;padding:9px 10px;font-family:inherit;}
+label{font-size:10px;color:var(--faint);letter-spacing:1px;display:block;margin:8px 0 4px;}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(80px);
+  background:#131c2c;border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:12px;
+  max-width:88%;opacity:0;transition:all .25s;z-index:99;pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:90;padding:18px;}
+#modal.show{display:flex;}
+#modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;width:100%;max-width:340px;}
+
+/* sections collapse */
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0 14px;}
+details summary{font-size:10px;letter-spacing:2px;color:var(--dim);font-weight:700;padding:13px 0;cursor:pointer;list-style:none;}
+details summary::after{content:'+';float:right;color:var(--faint);}
+details[open] summary::after{content:'−';}
+details .inner{padding:2px 0 14px;}
+
+.good{color:var(--blue);} .bad{color:#ff7a5c;} .warn{color:var(--amber);}
+#elebanner{display:none;background:linear-gradient(90deg,rgba(255,43,85,.14),rgba(25,185,255,.10));
+  border:1px solid rgba(255,43,85,.45);border-radius:10px;padding:9px 12px;margin-bottom:9px;font-size:11px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="hdr">
+    <div><h1>JARVIS</h1><small>v32 · 7-LAYER · CONTINUOUS LEARNING</small></div>
+    <div style="text-align:right">
+      <div id="mkt"><span>NIFTY <b id="m-n">—</b></span><span>VIX <b id="m-v">—</b></span></div>
+      <div id="m-st" style="font-size:10px;color:var(--faint);letter-spacing:1px;">—</div>
+    </div>
+  </div>
+
+  <button id="btn-connect" class="btn-big btn-blue" onclick="J.kite.connect()">● CONNECT KITE</button>
+  <button id="btn-trade" class="btn-big btn-red" onclick="J.ui.trade()">⚡ TRADE</button>
+  <div id="status">engine starting…</div>
+
+  <div id="tcard" class="card">
+    <div id="elebanner">🐘 <b>ELEPHANT TRADE</b> — <span id="ele-why"></span>. Institutional footprint: consider holding to Target 2.</div>
+    <div id="tc-head">—</div>
+    <div id="tc-conf">—</div>
+    <div class="grid" id="tc-grid"></div>
+    <div class="grid3" id="tc-pnl" style="margin-top:7px;"></div>
+    <div id="tc-note"></div>
+    <div id="tc-acts">
+      <button class="btn-red" id="btn-init" onclick="J.ui.initiate()">✅ INITIATE TRADE</button>
+      <button class="btn-ghost" onclick="J.ui.skip()">SKIP</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>🤖 AUTOPILOT — PAPER TRADING</summary>
+    <div class="inner">
+      <div class="tgl"><span style="font-size:12px;color:var(--dim);">Auto-trade signals ≥80% (virtual money)</span>
+        <button id="ap-btn" onclick="J.autopilot.toggle()">OFF</button></div>
+      <div style="margin-top:9px;">
+        <div class="row"><span>Paper equity</span><b id="ap-eq">₹2,00,000</b></div>
+        <div class="row"><span>Open position</span><b id="ap-open">none</b></div>
+        <div class="row"><span>Record</span><b id="ap-rec">0W / 0L</b></div>
+        <div class="row"><span>Today</span><b id="ap-today">0/3 trades</b></div>
+        <div class="row"><span>Guards</span><b style="font-size:10px;color:var(--faint)">3/day · ₹6k loss cap · 2-loss halt</b></div>
+      </div>
+      <button class="btn-ghost" style="margin-top:9px;" onclick="J.autopilot.reset()">Reset paper account</button>
+    </div>
+  </details>
+
+  <details>
+    <summary>🧠 BRAIN — CONTINUOUS LEARNING</summary>
+    <div class="inner">
+      <div class="row"><span>Trades learned from</span><b id="br-n">0</b></div>
+      <div class="row"><span>Win rate</span><b id="br-wr">—</b></div>
+      <div class="row"><span>Confidence adjustment</span><b id="br-adj">±0</b></div>
+      <div class="row"><span>Best condition</span><b id="br-best" style="font-size:11px;">learning…</b></div>
+      <div class="row"><span>Worst condition</span><b id="br-worst" style="font-size:11px;">learning…</b></div>
+      <div style="font-size:10px;color:var(--faint);margin-top:8px;line-height:1.6;">
+        Every signal and paper trade is logged with its market conditions (RSI band, VIX regime, hour, direction).
+        Win rates per condition feed back into confidence on every future signal. Needs ~20 trades to activate, ~50 to mature.</div>
+    </div>
+  </details>
+
+  <details>
+    <summary>⚙️ SETTINGS</summary>
+    <div class="inner">
+      <label>WORKER URL (Cloudflare)</label><input id="set-worker" placeholder="https://jarvis-kite.you.workers.dev">
+      <label>KITE API KEY</label><input id="set-key" placeholder="your api_key">
+      <label>CAPITAL ₹</label><input id="set-cap" value="200000" inputmode="numeric">
+      <label>RISK % PER TRADE</label><input id="set-risk" value="2" inputmode="decimal">
+      <button class="btn-blue" style="width:100%;margin-top:11px;font-weight:700;" onclick="J.settings.save()">SAVE</button>
+      <button class="btn-ghost" style="width:100%;margin-top:7px;" onclick="J.kite.manualToken()">Enter access token manually</button>
+    </div>
+  </details>
+
+  <details>
+    <summary>🩺 DIAGNOSTICS</summary>
+    <div class="inner">
+      <button class="btn-blue" style="width:100%;font-weight:700;" onclick="J.diag.run()">RUN SELF-TEST ON THIS DEVICE</button>
+      <div id="diag-out" style="margin-top:9px;font-size:11px;"></div>
+    </div>
+  </details>
+
+  <div style="text-align:center;font-size:9px;color:#22303f;padding:6px 0 14px;line-height:1.7;">
+    Signals are decision support, not guarantees. Paper-trade 4–6 weeks before real money.<br>
+    Risk is capped by you, not by hope. JARVIS v32.
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="modal"><div class="box" id="modal-box"></div></div>
+
+<script>
+'use strict';
+/* ═════════════════════════════════════════════════════════════
+   JARVIS v32 — single clean architecture. No wrappers. One
+   definition per function. Modules: util, store, data, ta, smc,
+   brain, engine (7 layers), autopilot, kite, ui, diag.
+   ═════════════════════════════════════════════════════════════ */
+window.J = {};
+
+/* ── util ─────────────────────────────────────────────────── */
+J.u = {
+  $: function(id){ return document.getElementById(id); },
+  setT: function(id, v){ var e=J.u.$(id); if(e && e.textContent!==String(v)) e.textContent=v; },
+  inr: function(n){ return Math.round(n).toLocaleString('en-IN'); },
+  clamp: function(v,a,b){ return Math.max(a, Math.min(b, v)); },
+  today: function(){ return new Date().toISOString().slice(0,10); },
+  istNow: function(){ var d=new Date(); return new Date(d.getTime() + (330 + d.getTimezoneOffset())*60000); },
+  marketOpen: function(){
+    var t=J.u.istNow(), m=t.getHours()*60+t.getMinutes(), d=t.getDay();
+    return d>=1 && d<=5 && m>=555 && m<=930; /* 09:15–15:30 IST */
+  },
+  toast: function(msg){
+    var t=J.u.$('toast'); if(!t) return;
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(J.u._tt); J.u._tt=setTimeout(function(){ t.classList.remove('show'); }, 2800);
+  },
+  vibe: function(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} },
+  modal: function(html){ var b=J.u.$('modal-box'); if(b){ b.innerHTML=html; J.u.$('modal').classList.add('show'); } },
+  closeModal: function(){ var m=J.u.$('modal'); if(m) m.classList.remove('show'); },
+  err: function(kind, msg, src){
+    try{
+      var log=JSON.parse(localStorage.getItem('j32_err')||'[]');
+      log.unshift({t:new Date().toISOString().slice(5,19),k:kind,m:String(msg).slice(0,120),s:String(src||'').slice(0,50)});
+      if(log.length>25) log.length=25;
+      localStorage.setItem('j32_err', JSON.stringify(log));
+    }catch(e){}
+  }
+};
+window.addEventListener('error', function(e){ J.u.err('JS', e.message, (e.filename||'').split('/').pop()+':'+e.lineno); });
+window.addEventListener('unhandledrejection', function(e){ J.u.err('PROMISE', (e.reason&&e.reason.message)||e.reason); });
+
+/* ── store (settings + persisted state) ───────────────────── */
+J.store = {
+  get: function(k, d){ try{ var v=localStorage.getItem('j32_'+k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
+  set: function(k, v){ try{ localStorage.setItem('j32_'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+J.settings = {
+  load: function(){
+    var s=J.store.get('settings', {worker:'', key:'', cap:200000, risk:2});
+    J.u.$('set-worker').value=s.worker||''; J.u.$('set-key').value=s.key||'';
+    J.u.$('set-cap').value=s.cap; J.u.$('set-risk').value=s.risk;
+    return s;
+  },
+  save: function(){
+    var s={ worker:(J.u.$('set-worker').value||'').trim().replace(/\/+$/,''),
+            key:(J.u.$('set-key').value||'').trim(),
+            cap:parseFloat(J.u.$('set-cap').value)||200000,
+            risk:J.u.clamp(parseFloat(J.u.$('set-risk').value)||2, .5, 2) };
+    J.store.set('settings', s); J.state.cfg=s;
+    J.u.toast('Settings saved'); return s;
+  }
+};
+
+/* ── runtime state ────────────────────────────────────────── */
+J.state = {
+  cfg: {worker:'', key:'', cap:200000, risk:2},
+  prices: { N:24500, BNF:52000, VIX:14, pN:24500, live:false },
+  hist: { N:[], BNF:[] },             /* close ring buffers, max 240 */
+  kite: { connected:false, token:'', user:'' },
+  conclusion: null,                    /* layer-7 cached output */
+  conclusionAt: 0,
+  bestConf: 0,
+  busy: false
+};
+
+/* ── data layer ───────────────────────────────────────────── */
+J.data = {
+  pushPx: function(sym, px){
+    var h=J.state.hist[sym]; if(!h) return;
+    h.push(px); if(h.length>240) h.shift();
+  },
+  /* Yahoo fallback (delayed) for indices when Kite is not connected */
+  fetchYahoo: async function(){
+    try{
+      var r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=5m&range=1d');
+      var d=await r.json();
+      var res=d&&d.chart&&d.chart.result&&d.chart.result[0];
+      if(res){
+        var closes=(res.indicators.quote[0].close||[]).filter(function(x){return x!=null;});
+        if(closes.length){
+          J.state.hist.N = closes.slice(-240);
+          J.state.prices.pN = J.state.prices.N;
+          J.state.prices.N = Math.round(closes[closes.length-1]*100)/100;
+        }
+        if(res.meta && res.meta.previousClose) J.state.prices.pN = res.meta.previousClose;
+      }
+      var r2=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EINDIAVIX?interval=5m&range=1d');
+      var d2=await r2.json();
+      var res2=d2&&d2.chart&&d2.chart.result&&d2.chart.result[0];
+      if(res2 && res2.meta && res2.meta.regularMarketPrice) J.state.prices.VIX=res2.meta.regularMarketPrice;
+    }catch(e){}
+  },
+  /* Kite quotes via Worker proxy (live) */
+  fetchKite: async function(){
+    var s=J.state;
+    if(!s.kite.connected || !s.cfg.worker) return false;
+    try{
+      var r=await fetch(s.cfg.worker+'/quote?i=NSE:NIFTY%2050&i=NSE:NIFTY%20BANK&i=NSE:INDIA%20VIX',
+        {headers:{'Authorization':'token '+s.kite.token}});
+      var d=await r.json();
+      if(d && d.data){
+        var n=d.data['NSE:NIFTY 50'], b=d.data['NSE:NIFTY BANK'], v=d.data['NSE:INDIA VIX'];
+        if(n&&n.last_price){ s.prices.pN=s.prices.N; s.prices.N=n.last_price; J.data.pushPx('N', n.last_price); }
+        if(b&&b.last_price){ s.prices.BNF=b.last_price; J.data.pushPx('BNF', b.last_price); }
+        if(v&&v.last_price){ s.prices.VIX=v.last_price; }
+        s.prices.live=true;
+        return true;
+      }
+    }catch(e){}
+    return false;
+  },
+  cycle: async function(){
+    var ok=await J.data.fetchKite();
+    if(!ok && (!J.data._yT || Date.now()-J.data._yT>60000)){ /* yahoo at most 1/min */
+      J.data._yT=Date.now(); await J.data.fetchYahoo();
+    }
+    /* keep a synthetic tick so indicators have a series even pre-data */
+    if(J.state.hist.N.length<30){
+      var base=J.state.prices.N;
+      while(J.state.hist.N.length<30) J.state.hist.N.push(base+(Math.random()-.5)*8);
+    } else if(!ok){
+      J.data.pushPx('N', J.state.prices.N + (Math.random()-.5)*2); /* gentle drift when stale */
+    }
+  }
+};
+
+/* ── technical analysis ───────────────────────────────────── */
+J.ta = {
+  sma: function(a,n){ if(a.length<n) return null; var s=0; for(var i=a.length-n;i<a.length;i++)s+=a[i]; return s/n; },
+  ema: function(a,n){ if(a.length<n) return null; var k=2/(n+1), e=a[a.length-n];
+    for(var i=a.length-n+1;i<a.length;i++) e=a[i]*k+e*(1-k); return e; },
+  rsi: function(a,n){ n=n||14; if(a.length<n+1) return 50;
+    var g=0,l=0;
+    for(var i=a.length-n;i<a.length;i++){ var d=a[i]-a[i-1]; if(d>0)g+=d; else l-=d; }
+    if(l===0) return 100; var rs=g/l; return 100-100/(1+rs); },
+  macd: function(a){ var f=J.ta.ema(a,12), s=J.ta.ema(a,26);
+    if(f===null||s===null) return {line:0,bull:false};
+    var line=f-s; return {line:line, bull:line>0}; },
+  atr: function(a,n){ n=n||14; if(a.length<n+1) return 0;
+    var s=0; for(var i=a.length-n;i<a.length;i++) s+=Math.abs(a[i]-a[i-1]); return s/n; },
+  bb: function(a,n){ n=n||20; var m=J.ta.sma(a,n); if(m===null) return {pctB:.5};
+    var v=0; for(var i=a.length-n;i<a.length;i++) v+=Math.pow(a[i]-m,2);
+    var sd=Math.sqrt(v/n)||1; var last=a[a.length-1];
+    return {pctB:(last-(m-2*sd))/(4*sd), squeeze: sd/m<0.0035}; },
+  vwapish: function(a,n){ return J.ta.sma(a, Math.min(n||30, a.length)); }
+};
+
+/* ── SMC essentials (price-action structure) ──────────────── */
+J.smc = {
+  analyse: function(a){
+    var out={bias:'NEUTRAL', notes:[], score:0};
+    if(a.length<40) return out;
+    var seg=a.slice(-40);
+    /* swing structure: HH/HL vs LH/LL using thirds */
+    var t1=Math.max.apply(null,seg.slice(0,13)), t2=Math.max.apply(null,seg.slice(13,26)), t3=Math.max.apply(null,seg.slice(26));
+    var b1=Math.min.apply(null,seg.slice(0,13)), b2=Math.min.apply(null,seg.slice(13,26)), b3=Math.min.apply(null,seg.slice(26));
+    if(t3>t2&&t2>t1&&b3>b2){ out.bias='BULL'; out.score+=2; out.notes.push('HH/HL structure'); }
+    else if(t3<t2&&t2<t1&&b3<b2){ out.bias='BEAR'; out.score-=2; out.notes.push('LH/LL structure'); }
+    /* displacement: last bar vs ATR */
+    var atr=J.ta.atr(seg), lastMove=seg[seg.length-1]-seg[seg.length-2];
+    if(atr>0 && Math.abs(lastMove)>1.8*atr){
+      out.displacement=Math.abs(lastMove/atr);
+      out.score += lastMove>0?2:-2;
+      out.notes.push('displacement '+(lastMove/atr).toFixed(1)+'×ATR');
+    }
+    /* liquidity sweep: poke beyond prior extreme then close back */
+    var prevHigh=Math.max.apply(null,seg.slice(0,-3)), prevLow=Math.min.apply(null,seg.slice(0,-3));
+    var recent=seg.slice(-3), last=seg[seg.length-1];
+    if(Math.max.apply(null,recent)>prevHigh && last<prevHigh){ out.score-=1; out.notes.push('high swept → reversal risk'); }
+    if(Math.min.apply(null,recent)<prevLow && last>prevLow){ out.score+=1; out.notes.push('low swept → spring'); }
+    /* fair value gap proxy: 3-bar imbalance */
+    for(var i=seg.length-12;i<seg.length-2;i++){
+      if(i<2) continue;
+      if(seg[i-2]<seg[i] && seg[i+2]>seg[i] && (seg[i+2]-seg[i-2])>2.2*atr){ out.notes.push('bullish FVG'); out.score+=1; break; }
+      if(seg[i-2]>seg[i] && seg[i+2]<seg[i] && (seg[i-2]-seg[i+2])>2.2*atr){ out.notes.push('bearish FVG'); out.score-=1; break; }
+    }
+    return out;
+  }
+};
+
+/* ── Black-Scholes (CE/PE pricing for premiums + paper exits) ─ */
+J.bs = function(S,K,T,r,sig,type){
+  if(T<=0) T=0.5/365;
+  function nd(x){ return Math.exp(-x*x/2)/Math.sqrt(2*Math.PI); }
+  function N(x){ var t=1/(1+0.2316419*Math.abs(x));
+    var d=t*(0.31938153+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+    var n=1-nd(x)*d; return x>=0?n:1-n; }
+  var d1=(Math.log(S/K)+(r+sig*sig/2)*T)/(sig*Math.sqrt(T)), d2=d1-sig*Math.sqrt(T);
+  var price = type==='CE' ? S*N(d1)-K*Math.exp(-r*T)*N(d2) : K*Math.exp(-r*T)*N(-d2)-S*N(-d1);
+  var delta = type==='CE' ? N(d1) : N(d1)-1;
+  var theta = -(S*nd(d1)*sig)/(2*Math.sqrt(T))/365;
+  return { price:Math.max(0.05, price), delta:delta, theta:theta };
+};
+
+/* ── contracts: Jan-2026 lot sizes + expiry + tradingsymbol ── */
+J.contract = {
+  lot: function(sym){ return ({NIFTY:65, BANKNIFTY:30, FINNIFTY:60, MIDCPNIFTY:120, SENSEX:20})[sym]||65; },
+  /* NIFTY weekly expiry = Tuesday; BANKNIFTY monthly = last Tuesday of month */
+  nextExpiry: function(sym){
+    var d=J.u.istNow();
+    if(sym==='BANKNIFTY'){
+      var e=new Date(d.getFullYear(), d.getMonth()+1, 0);            /* month end */
+      while(e.getDay()!==2) e.setDate(e.getDate()-1);                 /* last Tuesday */
+      if(e - d < 0 || (e.toDateString()===d.toDateString() && d.getHours()>=15)){
+        e=new Date(d.getFullYear(), d.getMonth()+2, 0);
+        while(e.getDay()!==2) e.setDate(e.getDate()-1);
+      }
+      return e;
+    }
+    var e2=new Date(d);
+    var add=(2 - e2.getDay() + 7) % 7;                                /* next Tuesday */
+    if(add===0 && d.getHours()>=15) add=7;
+    e2.setDate(e2.getDate()+add);
+    return e2;
+  },
+  dte: function(sym){
+    var ms=J.contract.nextExpiry(sym) - J.u.istNow();
+    return Math.max(0.5, ms/86400000);
+  },
+  expiryLabel: function(sym){
+    var e=J.contract.nextExpiry(sym);
+    var mo=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][e.getMonth()];
+    return ('0'+e.getDate()).slice(-2)+mo+String(e.getFullYear()).slice(-2);
+  },
+  /* NSE tradingsymbol: weekly = YY + M(1-9,O,N,D) + DD ; monthly = YY + MMM */
+  tsym: function(sym, strike, type){
+    var e=J.contract.nextExpiry(sym), yy=String(e.getFullYear()).slice(-2);
+    var isLastTueOfMonth=(function(){ var t=new Date(e); t.setDate(t.getDate()+7); return t.getMonth()!==e.getMonth(); })();
+    if(sym==='BANKNIFTY' || isLastTueOfMonth){
+      var mmm=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][e.getMonth()];
+      return sym+yy+mmm+strike+type;
+    }
+    var mcode=['1','2','3','4','5','6','7','8','9','O','N','D'][e.getMonth()];
+    return sym+yy+mcode+('0'+e.getDate()).slice(-2)+strike+type;
+  }
+};
+</script>
+
+<script>
+'use strict';
+/* ── BRAIN — continuous learning (THE core requirement) ─────
+   Every signal & paper trade is journaled with its market
+   conditions. Per-condition win rates feed an adjustment back
+   into Layer 6 of every future analysis. Persistent forever. */
+J.brain = {
+  _load: function(){ return J.store.get('brain', {trades:[], total:0, wins:0}); },
+  _save: function(b){ J.store.set('brain', b); },
+  bucket: function(ctx){
+    /* condition fingerprint: rsi band · vix regime · session hour · direction */
+    var rb = ctx.rsi>=60?'rsiHI':ctx.rsi<=40?'rsiLO':'rsiMID';
+    var vb = ctx.vix<12?'vixLO':ctx.vix>17?'vixHI':'vixMID';
+    var hb = 'h'+ctx.hour;
+    return [rb, vb, hb, ctx.dir];
+  },
+  log: function(t){
+    var b=J.brain._load();
+    t.id='T'+Date.now()+Math.floor(Math.random()*999);
+    t.openedAt=Date.now(); t.status='open';
+    t.buckets=J.brain.bucket({rsi:t.rsi||50, vix:t.vix||14, hour:J.u.istNow().getHours(), dir:t.dir||'CE'});
+    b.trades.unshift(t); if(b.trades.length>400) b.trades.length=400;
+    J.brain._save(b); return t.id;
+  },
+  close: function(id, result, pnl){
+    var b=J.brain._load();
+    for(var i=0;i<b.trades.length;i++){
+      if(b.trades[i].id===id){
+        b.trades[i].status='closed'; b.trades[i].result=result; b.trades[i].pnl=pnl;
+        b.total++; if(result==='win') b.wins++;
+        break;
+      }
+    }
+    J.brain._save(b); J.brain.render();
+  },
+  stats: function(){
+    var b=J.brain._load();
+    var closed=b.trades.filter(function(t){return t.status==='closed';});
+    return { total:closed.length, wins:closed.filter(function(t){return t.result==='win';}).length, trades:closed };
+  },
+  /* per-condition WR table */
+  table: function(){
+    var s=J.brain.stats(), map={};
+    s.trades.forEach(function(t){
+      (t.buckets||[]).forEach(function(bk){
+        if(!map[bk]) map[bk]={n:0,w:0};
+        map[bk].n++; if(t.result==='win') map[bk].w++;
+      });
+    });
+    return map;
+  },
+  /* Layer-6 adjustment for a prospective signal's conditions */
+  adjust: function(ctx){
+    var s=J.brain.stats();
+    if(s.total<20) return {adj:0, why:'learning ('+s.total+'/20 trades)'};
+    var tab=J.brain.table(), bks=J.brain.bucket(ctx), adj=0, hits=0, why=[];
+    bks.forEach(function(bk){
+      var c=tab[bk];
+      if(c && c.n>=6){
+        var wr=c.w/c.n, d=(wr-0.5)*20;          /* ±10 per condition, scaled */
+        adj+=d; hits++;
+        if(Math.abs(d)>=4) why.push(bk+' '+Math.round(wr*100)+'%('+c.n+')');
+      }
+    });
+    adj = hits? J.u.clamp(adj/hits*1.4, -12, 12) : 0;
+    return {adj:Math.round(adj), why:why.join(' · ')||'conditions neutral'};
+  },
+  render: function(){
+    var s=J.brain.stats();
+    J.u.setT('br-n', s.total);
+    J.u.setT('br-wr', s.total? Math.round(100*s.wins/s.total)+'%' : '—');
+    var a=J.brain.adjust({rsi:J.ta.rsi(J.state.hist.N), vix:J.state.prices.VIX, hour:J.u.istNow().getHours(), dir:'CE'});
+    J.u.setT('br-adj', (a.adj>0?'+':'')+a.adj+' pts');
+    var tab=J.brain.table(), best=null, worst=null;
+    Object.keys(tab).forEach(function(k){
+      var c=tab[k]; if(c.n<6) return;
+      var wr=c.w/c.n;
+      if(!best || wr>best.wr) best={k:k,wr:wr,n:c.n};
+      if(!worst || wr<worst.wr) worst={k:k,wr:wr,n:c.n};
+    });
+    J.u.setT('br-best',  best ? best.k+' · '+Math.round(best.wr*100)+'% ('+best.n+')' : 'learning…');
+    J.u.setT('br-worst', worst? worst.k+' · '+Math.round(worst.wr*100)+'% ('+worst.n+')' : 'learning…');
+  }
+};
+
+/* ── 7-LAYER ANALYSIS ENGINE ─────────────────────────────────
+   Pure function of state → conclusion. No DOM writes here. */
+J.engine = {
+  analyse: function(){
+    var P=J.state.prices, H=J.state.hist.N;
+    var c={ at:Date.now(), layers:[] };
+
+    /* L1 — indicators + SMC */
+    var rsi=J.ta.rsi(H), macd=J.ta.macd(H), bb=J.ta.bb(H), atr=J.ta.atr(H);
+    var vw=J.ta.vwapish(H,30), last=H[H.length-1]||P.N;
+    var smc=J.smc.analyse(H);
+    c.layers.push('L1: rsi '+rsi.toFixed(0)+' · macd '+(macd.bull?'bull':'bear')+' · smc '+smc.bias);
+
+    /* L2 — agent votes */
+    var score=50;
+    if(rsi>=60) score+=10; else if(rsi<=40) score-=10;
+    if(macd.bull) score+=8; else score-=8;
+    if(vw && last>vw*1.001) score+=6; else if(vw && last<vw*0.999) score-=6;
+    if(bb.pctB>0.78) score+=4; else if(bb.pctB<0.22) score-=4;
+    score += J.u.clamp(smc.score*3, -12, 12);
+    var hour=J.u.istNow().getHours();
+    if(hour===9) score += (score>50? 3:-3);                 /* opening drive follows */
+    if(hour>=14) score += (score>50? -2:2);                  /* late-day mean reversion */
+    c.layers.push('L2: composite '+Math.round(score));
+
+    /* L3 — direction */
+    var dir = score>=56 ? 'CE' : score<=44 ? 'PE' : null;
+    var conf = J.u.clamp(Math.round(50 + Math.abs(score-50)*1.7), 30, 92);
+    c.layers.push('L3: '+(dir||'NEUTRAL')+' base conf '+conf);
+
+    /* VIX regime sanity */
+    if(P.VIX>22){ conf=Math.min(conf,62); c.layers.push('L3b: VIX '+P.VIX.toFixed(1)+' high — capped'); }
+
+    if(!dir){
+      c.recommendation='NO_TRADE'; c.confidence=conf;
+      c.narrative='Composite '+Math.round(score)+'/100 — no directional edge. '+(smc.notes[0]||'');
+      return c;
+    }
+
+    /* L4 — signal construction (2026 lots, 2% risk) */
+    var sym='NIFTY', spot=P.N, step=50;
+    var strike=Math.round(spot/step)*step + (dir==='CE'? step : -step);   /* 1 strike OTM */
+    var dte=J.contract.dte(sym), iv=Math.max(10, P.VIX)/100;
+    var g=J.bs(spot, strike, dte/365, 0.067, iv, dir);
+    var entry=Math.max(5, Math.round(g.price*10)/10);
+    var sl=Math.round(entry*0.55);
+    var t1=Math.round(entry + 2.2*(entry-sl));
+    var t2=Math.round(entry + 3.3*(entry-sl));
+    var lotSize=J.contract.lot(sym);
+    var riskPerLot=(entry-sl)*lotSize;
+    var lots=Math.max(1, Math.floor((J.state.cfg.cap * J.state.cfg.risk/100) / Math.max(1,riskPerLot)));
+    lots=Math.min(lots, 5);
+    c.layers.push('L4: '+sym+' '+strike+dir+' @₹'+entry+' SL '+sl+' T '+t1+'/'+t2+' ×'+lots);
+
+    /* L5 — precision filters */
+    var s10=J.ta.sma(H,10), s20=J.ta.sma(H,20);
+    var aligned = dir==='CE' ? (last>s10 && s10>s20) : (last<s10 && s10<s20);
+    if(aligned){ conf=Math.min(96, conf+6); c.layers.push('L5: MTF aligned ✓'); }
+    else { conf=Math.max(30, conf-8); c.layers.push('L5: MTF misaligned'); }
+    var atrPct=atr/last*100;
+    if(atrPct<0.04){ conf=Math.min(conf,58); c.layers.push('L5: ATR thin'); }
+    else if(atrPct>2.5){ conf=Math.max(30, conf-10); c.layers.push('L5: ATR chaotic'); }
+
+    /* L6 — BRAIN learning adjustment */
+    var adj=J.brain.adjust({rsi:rsi, vix:P.VIX, hour:hour, dir:dir});
+    conf=J.u.clamp(conf+adj.adj, 25, 97);
+    c.layers.push('L6: brain '+(adj.adj>0?'+':'')+adj.adj+' ('+adj.why+')');
+
+    /* L7 — validation + elephant + finalize */
+    if((t1-entry)/Math.max(1,entry-sl) < 2.0){ t1=Math.round(entry+2.2*(entry-sl)); t2=Math.round(entry+3.3*(entry-sl)); }
+    var ele=0, eleWhy=[];
+    if(Math.abs(score-50)>=28){ ele++; eleWhy.push('momentum extreme'); }
+    if(smc.displacement){ ele++; eleWhy.push('displacement '+smc.displacement.toFixed(1)+'×ATR'); }
+    if((dir==='CE'&&P.VIX<12.5)||(dir==='PE'&&P.VIX>17)){ ele++; eleWhy.push('VIX regime'); }
+    var elephant=ele>=2;
+    if(elephant) conf=Math.min(97, conf+4);
+    c.layers.push('L7: validated'+(elephant?' · 🐘 '+eleWhy.join(', '):''));
+
+    c.recommendation='BUY_'+dir; c.symbol=sym; c.dir=dir; c.option_type=dir;
+    c.strike=strike; c.entry=entry; c.sl=sl; c.t1=t1; c.t2=t2; c.lots=lots;
+    c.lotSize=lotSize; c.dte=dte; c.iv=Math.round(iv*100); c.rsi=rsi; c.vix=P.VIX;
+    c.confidence=conf; c.elephant=elephant; c.eleWhy=eleWhy.join(' · ');
+    c.expiry=J.contract.expiryLabel(sym);
+    c.narrative=smc.notes.slice(0,2).join(' · ')||('composite '+Math.round(score));
+    return c;
+  }
+};
+
+/* ── AUTOPILOT — paper trading with hard guards ───────────── */
+J.autopilot = {
+  _fresh: function(){ return {equity:200000, open:null, day:J.u.today(), nToday:0, lossToday:0,
+                              streakL:0, halted:false, wins:0, losses:0, pnl:0}; },
+  state: function(){ var s=J.store.get('paper', null)||J.autopilot._fresh();
+    if(s.day!==J.u.today()){ s.day=J.u.today(); s.nToday=0; s.lossToday=0; s.halted=false; s.streakL=0; J.store.set('paper', s); }
+    return s; },
+  on: function(){ return J.store.get('ap_on', false); },
+  toggle: function(){
+    var v=!J.autopilot.on(); J.store.set('ap_on', v); J.autopilot.render();
+    J.u.toast(v?'🤖 Autopilot ON — paper trades signals ≥80% with guards':'🤖 Autopilot off');
+  },
+  reset: function(){ J.store.set('paper', J.autopilot._fresh()); J.autopilot.render(); J.u.toast('Paper account reset to ₹2,00,000'); },
+  priceNow: function(pos){
+    var dte=Math.max(0.5, pos.dte - (Date.now()-pos.t)/86400000);
+    var g=J.bs(J.state.prices.N, pos.strike, dte/365, 0.067, Math.max(10,J.state.prices.VIX)/100, pos.dir);
+    return Math.round(g.price*10)/10;
+  },
+  tick: function(){
+    var s=J.autopilot.state();
+    /* manage open ALWAYS (never orphan) */
+    if(s.open){
+      var px=J.autopilot.priceNow(s.open); s.open.last=px;
+      if(px<=s.open.sl) return J.autopilot._close(s,'SL', s.open.sl);
+      if(s.open.elephant && px>=s.open.t2) return J.autopilot._close(s,'T2 🐘', s.open.t2);
+      if(px>=s.open.t1) return J.autopilot._close(s,'T1', s.open.t1);
+      J.store.set('paper', s); J.autopilot.render(); return;
+    }
+    if(!J.autopilot.on() || s.halted || s.nToday>=3){ J.autopilot.render(); return; }
+    var c=J.state.conclusion;
+    if(!c || c.recommendation==='NO_TRADE') return;
+    if(c.confidence<80) return;
+    if(Date.now()-J.state.conclusionAt>15000) return;
+    /* enter */
+    s.open={ sym:c.symbol, strike:c.strike, dir:c.dir, entry:c.entry, sl:c.sl, t1:c.t1, t2:c.t2,
+             lots:Math.min(c.lots,2), lotSize:c.lotSize, dte:c.dte, elephant:c.elephant,
+             t:Date.now(), last:c.entry,
+             brainId:J.brain.log({dir:c.dir, entry:c.entry, sl:c.sl, t1:c.t1, rsi:c.rsi, vix:c.vix, conf:c.confidence, paper:true}) };
+    s.nToday++;
+    J.store.set('paper', s); J.autopilot.render();
+    J.u.toast('🤖📈 PAPER ENTRY: '+c.symbol+' '+c.strike+c.dir+' @₹'+c.entry+' ×'+s.open.lots);
+  },
+  _close: function(s, reason, px){
+    var p=s.open, pnl=Math.round((px-p.entry)*p.lotSize*p.lots);
+    s.equity+=pnl; s.pnl+=pnl;
+    if(pnl>=0){ s.wins++; s.streakL=0; } else { s.losses++; s.streakL++; s.lossToday+=-pnl; }
+    if(s.lossToday>=6000 || s.streakL>=2) s.halted=true;
+    if(p.brainId) J.brain.close(p.brainId, pnl>=0?'win':'loss', pnl);
+    s.open=null;
+    J.store.set('paper', s); J.autopilot.render();
+    J.u.toast('🤖'+(pnl>=0?'✅':'🔻')+' PAPER EXIT '+reason+': '+(pnl>=0?'+':'')+'₹'+J.u.inr(pnl)+(s.halted?' · ⛔ halted today':''));
+  },
+  render: function(){
+    var s=J.autopilot.state(), b=J.u.$('ap-btn');
+    if(b){ var on=J.autopilot.on();
+      if((b.textContent==='ON')!==on){ b.textContent=on?'ON':'OFF'; b.classList.toggle('on', on); } }
+    J.u.setT('ap-eq','₹'+J.u.inr(s.equity));
+    J.u.setT('ap-open', s.open ? (s.open.sym+' '+s.open.strike+s.open.dir+' · '+((s.open.last-s.open.entry)*s.open.lotSize*s.open.lots>=0?'+':'')+'₹'+J.u.inr((s.open.last-s.open.entry)*s.open.lotSize*s.open.lots)) : 'none');
+    J.u.setT('ap-rec', s.wins+'W / '+s.losses+'L'+(s.pnl?(' · '+(s.pnl>0?'+':'')+'₹'+J.u.inr(s.pnl)):''));
+    J.u.setT('ap-today', s.nToday+'/3 trades'+(s.halted?' · ⛔ HALTED':''));
+  }
+};
+
+/* ── KITE (connect · token · publisher orders) ────────────── */
+J.kite = {
+  connect: function(){
+    var cfg=J.state.cfg;
+    if(!cfg.key){ J.u.toast('Add your Kite API key in ⚙️ Settings first'); return; }
+    J.store.set('kite_pending', true);
+    location.href='https://kite.zerodha.com/connect/login?v=3&api_key='+encodeURIComponent(cfg.key);
+  },
+  handleReturn: async function(){
+    var q=new URLSearchParams(location.search);
+    var rt=q.get('request_token');
+    if(!rt || !J.store.get('kite_pending', false)) return;
+    J.store.set('kite_pending', false);
+    history.replaceState({},'',location.pathname);
+    var cfg=J.state.cfg;
+    if(!cfg.worker){ J.kite.manualToken(rt); return; }
+    try{
+      var r=await fetch(cfg.worker+'/token', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({request_token:rt, api_key:cfg.key})});
+      var d=await r.json();
+      if(d.access_token){
+        J.kite._connected(d.access_token, d.user_name||'');
+        J.u.toast('✓ Zerodha connected'+(d.user_name?' — '+d.user_name:''));
+      } else { J.u.toast('Token exchange failed: '+(d.error||'unknown')); J.kite.manualToken(); }
+    }catch(e){ J.u.toast('Worker unreachable — manual token?'); J.kite.manualToken(); }
+  },
+  _connected: function(token, user){
+    J.state.kite={connected:true, token:token, user:user};
+    J.store.set('kite_session', {token:token, user:user, day:J.u.today()});
+    J.kite.render();
+  },
+  restore: function(){
+    var s=J.store.get('kite_session', null);
+    if(s && s.day===J.u.today() && s.token) J.state.kite={connected:true, token:s.token, user:s.user||''};
+    J.kite.render();
+  },
+  manualToken: function(){
+    J.u.modal('<div style="font-weight:700;color:var(--blue);margin-bottom:8px;">MANUAL ACCESS TOKEN</div>'
+      +'<div style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.6;">Paste today\'s access_token (generated via your Worker /token or any trusted tool). Expires ~6 AM daily.</div>'
+      +'<input id="mt-in" placeholder="access_token">'
+      +'<div style="display:flex;gap:8px;margin-top:12px;">'
+      +'<button class="btn-blue" style="flex:1;font-weight:700;" onclick="J.kite._manualSave()">SAVE</button>'
+      +'<button class="btn-ghost" style="flex:1;" onclick="J.u.closeModal()">CANCEL</button></div>');
+  },
+  _manualSave: function(){
+    var v=(J.u.$('mt-in')||{}).value||'';
+    if(v.trim().length<10){ J.u.toast('Token looks too short'); return; }
+    J.kite._connected(v.trim(),''); J.u.closeModal(); J.u.toast('✓ Token saved — connected');
+  },
+  render: function(){
+    var b=J.u.$('btn-connect'); if(!b) return;
+    var k=J.state.kite;
+    var label=k.connected ? ('✓ KITE LINKED'+(k.user?' · '+k.user.split(' ')[0].toUpperCase():'')) : '● CONNECT KITE';
+    if(b.dataset.l!==label){ b.dataset.l=label; b.textContent=label; }
+  },
+  /* Kite PUBLISHER — pre-filled order, you confirm inside Kite. IP-independent. */
+  publisher: function(c){
+    var qty=(c.lots||1)*c.lotSize;
+    var ts=J.contract.tsym(c.symbol, c.strike, c.dir);
+    var params=['exchange=NFO','tradingsymbol='+encodeURIComponent(ts),'transaction_type=BUY',
+      'order_type=LIMIT','quantity='+qty,'price='+c.entry,'product=MIS','validity=DAY'].join('&');
+    var url=J.state.cfg.key
+      ? 'https://kite.trade/connect/login?v=3&api_key='+J.state.cfg.key+'&redirect_params='+encodeURIComponent(params)
+      : 'https://kite.zerodha.com/orders';
+    J.u.modal('<div style="font-weight:700;color:var(--red);margin-bottom:4px;">SEND TO KITE</div>'
+      +'<div style="font-size:11px;color:var(--dim);margin-bottom:10px;">Pre-filled order · works from ANY network · you confirm inside Kite</div>'
+      +'<div class="cell" style="margin-bottom:10px;"><small>ORDER</small><b style="font-size:13px;">'+ts+'</b>'
+      +'<div style="font-size:11px;color:var(--dim);margin-top:4px;">BUY '+qty+' qty @ LIMIT ₹'+c.entry+' · MIS</div></div>'
+      +'<div style="font-size:10px;color:var(--faint);margin-bottom:12px;">Set SL ₹'+c.sl+' and target ₹'+c.t1+' after fill (GTT or manual).</div>'
+      +'<a href="'+url+'" style="display:block;text-align:center;background:rgba(255,43,85,.12);border:1px solid rgba(255,43,85,.5);color:var(--red);padding:13px;border-radius:10px;font-weight:700;text-decoration:none;" onclick="J.u.closeModal()">OPEN IN KITE →</a>'
+      +'<button class="btn-ghost" style="width:100%;margin-top:8px;" onclick="J.u.closeModal()">Cancel</button>');
+  }
+};
+
+/* ── UI (TRADE flow) ──────────────────────────────────────── */
+J.ui = {
+  pending: null,
+  trade: async function(){
+    J.u.vibe(25);
+    var c=J.state.conclusion;
+    if(!c || Date.now()-J.state.conclusionAt>10000){
+      J.u.setT('status','● running 7-layer analysis…');
+      await J.loop.runOnce();
+      c=J.state.conclusion;
+    }
+    if(!c){ J.u.toast('Engine not ready'); return; }
+    J.ui.pending=c; J.ui.renderCard(c);
+  },
+  renderCard: function(c){
+    var card=J.u.$('tcard'); if(!card) return;
+    var ele=J.u.$('elebanner');
+    if(c.recommendation==='NO_TRADE'){
+      if(ele) ele.style.display='none';
+      J.u.setT('tc-head','NO TRADE RIGHT NOW');
+      J.u.$('tc-head').style.color='var(--amber)';
+      J.u.$('tc-conf').innerHTML='';
+      J.u.$('tc-grid').innerHTML=''; J.u.$('tc-pnl').innerHTML='';
+      J.u.setT('tc-note', c.narrative+' — JARVIS keeps scanning every second.');
+      J.u.$('btn-init').style.display='none';
+    } else {
+      if(ele){ ele.style.display=c.elephant?'block':'none'; J.u.setT('ele-why', c.eleWhy||''); }
+      J.u.$('btn-init').style.display='block';
+      J.u.$('btn-init').textContent='✅ INITIATE TRADE';
+      J.u.$('btn-init').classList.remove('btn-blue'); J.u.$('btn-init').classList.add('btn-red');
+      J.u.setT('tc-head', c.recommendation.replace('_',' ')+' '+c.symbol+' '+c.strike+' '+c.dir);
+      J.u.$('tc-head').style.color='var(--txt)';
+      var cc=c.confidence>=95?'var(--red)':c.confidence>=75?'var(--blue)':'var(--amber)';
+      J.u.$('tc-conf').innerHTML='<b style="color:'+cc+'">'+c.confidence+'% CONFIDENCE</b>'
+        +(c.confidence>=95?' · <b style="color:var(--red)">HIGH CONVICTION</b>':'')
+        +' <span style="color:var(--faint)">· '+c.expiry+' · '+Math.round(c.dte*10)/10+'d</span>';
+      function cell(l,v,col){ return '<div class="cell"><small>'+l+'</small><b style="color:'+(col||'var(--txt)')+'">'+v+'</b></div>'; }
+      J.u.$('tc-grid').innerHTML =
+        cell('ENTRY','₹'+c.entry)+cell('STOP LOSS','₹'+c.sl,'#ff7a5c')
+        +cell('TARGET 1','₹'+c.t1,'var(--blue)')+cell('TARGET 2','₹'+c.t2,'var(--blue)')
+        +cell('LOTS',c.lots+' × '+c.lotSize)+cell('R : R','1 : '+(((c.t1-c.entry)/Math.max(1,c.entry-c.sl))).toFixed(1));
+      var q=c.lots*c.lotSize;
+      J.u.$('tc-pnl').innerHTML =
+        cell('PROFIT @T1','+₹'+J.u.inr((c.t1-c.entry)*q),'var(--blue)')
+        +cell('PROFIT @T2','+₹'+J.u.inr((c.t2-c.entry)*q),'var(--blue)')
+        +cell('LOSS @SL','−₹'+J.u.inr((c.entry-c.sl)*q),'#ff7a5c');
+      J.u.setT('tc-note','Capital ≈ ₹'+J.u.inr(c.entry*q)+' ('+q+' qty) · '+c.narrative
+        +(c.confidence<75?' · ⚠ moderate conviction — half size or skip':''));
+    }
+    card.classList.add('show');
+  },
+  initiate: function(){
+    var c=J.ui.pending;
+    if(!c || c.recommendation==='NO_TRADE') return;
+    J.u.vibe([40,30,40]);
+    var dk='j32_init_'+J.u.today();
+    try{ localStorage.setItem(dk, String((parseInt(localStorage.getItem(dk)||'0',10)||0)+1)); }catch(e){}
+    J.brain.log({dir:c.dir, entry:c.entry, sl:c.sl, t1:c.t1, rsi:c.rsi, vix:c.vix, conf:c.confidence, initiated:true});
+    J.kite.publisher(c);
+    var b=J.u.$('btn-init');
+    if(b){ b.textContent='SENT TO KITE ✓'; b.classList.remove('btn-red'); b.classList.add('btn-blue'); }
+  },
+  skip: function(){ J.u.$('tcard').classList.remove('show'); J.ui.pending=null; },
+  tick: function(){
+    var P=J.state.prices, c=J.state.conclusion;
+    J.u.setT('m-n', P.N?J.u.inr(P.N):'—');
+    J.u.setT('m-v', P.VIX?P.VIX.toFixed(1):'—');
+    var open=J.u.marketOpen(), ms=J.u.$('m-st');
+    if(ms){ var mt=(open?'MARKET OPEN':'MARKET CLOSED')+(P.live?' · LIVE':' · delayed');
+      if(ms.textContent!==mt){ ms.textContent=mt; ms.className=open?'open':''; ms.style.color=open?'var(--red)':'var(--faint)'; } }
+    var st;
+    if(!c) st='engine warming up…';
+    else if(c.recommendation==='NO_TRADE') st='● scanning — no setup · '+(J.state.kite.connected?'live':'connect Kite for live data');
+    else { st='● setup ready: '+c.confidence+'%'+(c.elephant?' 🐘':'')+' — tap TRADE';
+           J.state.bestConf=Math.max(J.state.bestConf, c.confidence); }
+    J.u.setT('status', st);
+    var tb=J.u.$('btn-trade');
+    if(tb){ var hot=c && c.recommendation!=='NO_TRADE' && (c.confidence>=95||c.elephant);
+      if(tb.classList.contains('hot')!==hot) tb.classList.toggle('hot',hot);
+      var tl=hot?('⚡ TRADE · '+c.confidence+'%'+(c.elephant?' 🐘':'')+' READY'):'⚡ TRADE';
+      if(tb.dataset.l!==tl){ tb.dataset.l=tl; tb.textContent=tl; } }
+    /* live-refresh open card on same setup */
+    if(J.ui.pending && J.u.$('tcard').classList.contains('show') && c
+       && c.at!==J.ui.pending.at && c.recommendation!=='NO_TRADE'
+       && c.strike===J.ui.pending.strike && c.dir===J.ui.pending.dir){
+      J.ui.pending=c; J.ui.renderCard(c);
+    }
+  }
+};
+
+/* ── DIAGNOSTICS (on-device) ──────────────────────────────── */
+J.diag = {
+  run: async function(){
+    var R=[];
+    function ck(n,f){ try{ var v=f(); R.push({n:n, ok:v===true, d:v===true?'':String(v).slice(0,42)}); }
+                      catch(e){ R.push({n:n, ok:false, d:e.message.slice(0,42)}); } }
+    ck('Engine analyse()',   function(){ var c=J.engine.analyse(); return !!c.recommendation; });
+    ck('Continuous loop',    function(){ var a=Date.now()-J.state.conclusionAt; return a<10000?true:'last '+Math.round(a/1000)+'s ago'; });
+    ck('Black-Scholes',      function(){ return J.bs(24500,24500,7/365,.067,.14,'CE').price>0; });
+    ck('Brain learning',     function(){ var s=J.brain.stats(); return s.total>=20?true:'learning '+s.total+'/20'; });
+    ck('Autopilot',          function(){ return typeof J.autopilot.tick==='function'; });
+    ck('Lot size 2026',      function(){ return J.contract.lot('NIFTY')===65 && J.contract.lot('BANKNIFTY')===30; });
+    ck('Expiry calc',        function(){ return J.contract.nextExpiry('NIFTY').getDay()===2; });
+    ck('localStorage',       function(){ localStorage.setItem('j32_t','1'); var ok=localStorage.getItem('j32_t')==='1'; localStorage.removeItem('j32_t'); return ok; });
+    ck('Settings',           function(){ return J.state.cfg.worker?true:(J.state.cfg.key?'no Worker URL':'no API key + no Worker'); });
+    ck('Kite session',       function(){ return J.state.kite.connected?true:'not connected today'; });
+    ck('Live data',          function(){ return J.state.prices.live?true:'delayed/synthetic'; });
+    var t0=Date.now(); var c=J.engine.analyse();
+    R.push({n:'Full 7-layer run', ok:!!c, d:(Date.now()-t0)+'ms · '+(c.recommendation||'')+' '+(c.confidence||'')+'%'});
+    var errs=[]; try{ errs=JSON.parse(localStorage.getItem('j32_err')||'[]'); }catch(e){}
+    R.push({n:'Black box', ok:errs.length===0, d:errs.length?errs.length+' errors below':'clean'});
+    var pass=R.filter(function(r){return r.ok;}).length;
+    var h='<div style="font-weight:700;color:'+(pass===R.length?'var(--blue)':'var(--amber)')+';margin-bottom:6px;">'
+        +pass+'/'+R.length+' '+(pass===R.length?'ALL SYSTEMS GO':'see below')+'</div>';
+    R.forEach(function(r){ h+='<div class="row"><span style="color:'+(r.ok?'var(--dim)':'#ff7a5c')+'">'
+        +(r.ok?'✓':'✗')+' '+r.n+'</span><b style="font-size:10px;color:var(--faint)">'+r.d+'</b></div>'; });
+    errs.slice(0,6).forEach(function(e){ h+='<div style="font-size:10px;color:#ff7a5c;padding:2px 0;">'+e.t+' ['+e.k+'] '+e.m+'</div>'; });
+    if(errs.length) h+='<button class="btn-ghost" style="margin-top:7px;" onclick="localStorage.removeItem(\'j32_err\');J.diag.run()">Clear black box</button>';
+    J.u.$('diag-out').innerHTML=h;
+    return {pass:pass, total:R.length};
+  }
+};
+
+/* ── MAIN LOOP — continuous 1s analyse + learn (key req) ───── */
+J.loop = {
+  runOnce: async function(){
+    if(J.state.busy) return;
+    J.state.busy=true;
+    try{
+      await J.data.cycle();
+      var c=J.engine.analyse();
+      J.state.conclusion=c; J.state.conclusionAt=Date.now();
+      /* hunter alerts (once per crossing) */
+      if(c.recommendation!=='NO_TRADE'){
+        if(c.confidence>=95 && J.loop._alert!==c.strike+c.dir+'95'){
+          J.loop._alert=c.strike+c.dir+'95';
+          J.u.toast('🎯 95%+ HUNTER: '+c.recommendation+' '+c.strike+c.dir+' @ '+c.confidence+'%'); J.u.vibe([60,40,60]);
+        } else if(c.elephant && J.loop._ele!==c.strike+c.dir){
+          J.loop._ele=c.strike+c.dir;
+          J.u.toast('🐘 ELEPHANT: '+c.eleWhy+' · '+c.confidence+'%'); J.u.vibe(70);
+        }
+      }
+      J.autopilot.tick();
+    }catch(e){ J.u.err('LOOP', e.message); }
+    J.state.busy=false;
+  },
+  start: function(){
+    setInterval(function(){ if(!document.hidden) J.loop.runOnce(); }, 1000);
+    setInterval(function(){ J.ui.tick(); }, 1000);
+    setInterval(function(){ J.brain.render(); }, 5000);
+    setTimeout(J.loop.runOnce, 400);
+  }
+};
+
+/* ── boot ─────────────────────────────────────────────────── */
+(function boot(){
+  J.state.cfg=J.settings.load();
+  J.kite.restore();
+  J.kite.handleReturn();
+  J.autopilot.render();
+  J.brain.render();
+  J.ui.tick();
+  J.loop.start();
+  console.log('JARVIS v32 online — clean build, continuous learning active');
+})();
+</script>
+
+</body>
+</html>
